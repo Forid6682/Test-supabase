@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Supabase App</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input { margin: 5px; padding: 8px; }
+    button { padding: 8px 12px; margin: 5px; }
+    li { margin: 5px 0; }
+  </style>
+</head>
+<body>
+
+<h2>➕ Add User</h2>
+<input id="name" placeholder="Name">
+<input id="phone" placeholder="Phone">
+<button onclick="addUser()">Save</button>
+
+<h2>📋 User List</h2>
+<ul id="list"></ul>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<script>
+const SUPABASE_URL = "https://zroahctdiuxkokfiseas.supabase.co";
+const SUPABASE_KEY = "1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyb2FoY3RkaXV4a29rZmlzZWFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDIwNjEsImV4cCI6MjA4OTU3ODA2MX0.XKgBb9Vncr3bdM92UhuZSE_66G-NPWdFbFUSbAIsE2Q";
+
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ADD
+async function addUser() {
+  const name = document.getElementById("name").value;
+  const phone = document.getElementById("phone").value;
+
+  const { error } = await client
+    .from("users")
+    .insert([{ name, phone }]);
+
+  if (error) {
+    alert("Error: " + error.message);
+  } else {
+    alert("Saved!");
+    loadUsers();
+  }
+}
+
+// LOAD
+async function loadUsers() {
+  const { data, error } = await client
+    .from("users")
+    .select("*")
+    .order("id", { ascending: false });
+
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  if (data) {
+    data.forEach(user => {
+      const li = document.createElement("li");
+
+      li.innerHTML = `
+        ${user.name} - ${user.phone}
+        <button onclick="editUser(${user.id}, '${user.name}', '${user.phone}')">Edit</button>
+        <button onclick="deleteUser(${user.id})">Delete</button>
+      `;
+
+      list.appendChild(li);
+    });
+  }
+}
+
+// DELETE
+async function deleteUser(id) {
+  await client.from("users").delete().eq("id", id);
+  loadUsers();
+}
+
+// EDIT
+async function editUser(id, oldName, oldPhone) {
+  const name = prompt("New Name:", oldName);
+  const phone = prompt("New Phone:", oldPhone);
+
+  if (!name || !phone) return;
+
+  await client
+    .from("users")
+    .update({ name, phone })
+    .eq("id", id);
+
+  loadUsers();
+}
+
+// AUTO LOAD
+loadUsers();
+</script>
+
+</body>
+  </html>
